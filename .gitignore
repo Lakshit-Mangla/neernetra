@@ -1,0 +1,30 @@
+# Never commit secrets — contains WiFi password + AWS IoT certificates/private key
+firmware/secrets.h
+
+# Node.js
+backend/node_modules/
+backend/package-lock.json
+npm-debug.log*
+
+# Arduino build artifacts
+*.bin
+*.elf
+*.map
+build/
+
+# AWS SAM (if used later)
+.aws-sam/
+samconfig.toml
+
+# OS/editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+*.swp
+
+# Downloaded AWS cert files (keep out of repo just in case they land here)
+*.pem
+*.pem.crt
+*.pem.key
+*-private.pem.key
+*-public.pem.key
