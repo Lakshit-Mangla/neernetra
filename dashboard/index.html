@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NeerNetra — Water Quality Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#eef6f3; --mist:#9fc4bb; --faint:#6d948b;
+  --surface:#102b27; --surface2:#0c211d; --line:#1f433d;
+  --aqua:#22d3ee; --safe:#3ddc97; --caution:#f2b705; --unsafe:#ff5a5a;
+  --bg:#081a17;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:light){
+  :root:not([data-theme="dark"]){
+    --ink:#0a211d; --mist:#3f645c; --faint:#6c8c84;
+    --surface:#ffffff; --surface2:#eef6f3; --line:#d5e6e1;
+    --bg:#f3f8f6;
+  }
+}
+:root[data-theme="dark"]{ --ink:#eef6f3; --mist:#9fc4bb; --faint:#6d948b; --surface:#102b27; --surface2:#0c211d; --line:#1f433d; --bg:#081a17; }
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Space Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.num{font-family:'JetBrains Mono',monospace}
+main{max-width:980px;margin:0 auto;padding:28px 18px 60px}
+
+.topbar{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:22px;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{width:26px;height:26px}
+.brand h1{font-size:1.15rem;font-weight:600;margin:0;letter-spacing:.2px}
+.src{color:var(--faint);font-size:.82rem}
+
+.hero{position:relative;border-radius:18px;overflow:hidden;background:var(--surface2);border:1px solid var(--line);padding:26px 24px;margin-bottom:18px}
+.hero .wave{position:absolute;inset:0;z-index:0;opacity:.5}
+.hero .wave path{animation:drift 9s linear infinite}
+@keyframes drift{from{transform:translateX(0)}to{transform:translateX(-400px)}}
+.hero-content{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.hero-status{font-size:2.1rem;font-weight:700;letter-spacing:.2px;margin:0 0 4px}
+.hero-advice{color:var(--mist);max-width:46ch;font-size:.95rem;line-height:1.5}
+.hero-device{text-align:right;font-size:.78rem;color:var(--faint)}
+.hero-device .num{font-size:.95rem;color:var(--ink)}
+.s-SAFE .hero-status{color:var(--safe)}
+.s-CAUTION .hero-status{color:var(--caution)}
+.s-UNSAFE .hero-status{color:var(--unsafe)}
+
+.gauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.gauge{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;align-items:center;gap:14px}
+.gauge svg{flex:none}
+.gauge-label{color:var(--faint);font-size:.75rem;text-transform:none;margin:0 0 2px}
+.gauge-value{font-size:1.5rem;font-weight:600}
+.gauge-unit{color:var(--mist);font-size:.78rem}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+.panel-title{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+.panel-title h2{font-size:.92rem;font-weight:600;margin:0}
+.panel-title span{color:var(--faint);font-size:.76rem}
+.chart-wrap{overflow-x:auto}
+svg.chart{width:100%;height:170px;display:block}
+
+table{width:100%;border-collapse:collapse;font-size:.86rem;min-width:420px}
+td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--faint);font-weight:500;font-size:.74rem}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:.74rem;font-weight:500}
+.pill.SAFE{background:rgba(61,220,151,.14);color:var(--safe)}
+.pill.CAUTION{background:rgba(242,183,5,.14);color:var(--caution)}
+.pill.UNSAFE{background:rgba(255,90,90,.14);color:var(--unsafe)}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+
+.foot{display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--faint);font-size:.78rem;margin-top:4px;flex-wrap:wrap}
+button{font:inherit;font-size:.82rem;padding:8px 14px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--aqua)}
+button:focus-visible,a:focus-visible{outline:2px solid var(--aqua);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.hero .wave path{animation:none}}
+</style>
+</head>
+<body>
+<main>
+  <div class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 2c3 4.5 7 9 7 13a7 7 0 1 1-14 0c0-4 4-8.5 7-13Z" stroke="currentColor" stroke-width="1.6"/></svg>
+      <h1>NeerNetra</h1>
+    </div>
+    <div class="src" id="src">Jal gunvatta ki live nigraani</div>
+  </div>
+
+  <div class="hero s-SAFE" id="hero">
+    <svg class="wave" viewBox="0 0 800 140" preserveAspectRatio="none">
+      <path d="M0,70 C100,40 200,100 300,70 C400,40 500,100 600,70 C700,40 800,100 900,70 C1000,40 1100,100 1200,70 L1200,140 L0,140 Z" fill="var(--aqua)" opacity=".18"/>
+    </svg>
+    <div class="hero-content">
+      <div>
+        <p class="hero-status" id="st">—</p>
+        <p class="hero-advice" id="adv">Data load ho raha hai…</p>
+      </div>
+      <div class="hero-device">
+        device <span class="num" id="devId">neernetra-01</span><br>
+        updated <span class="num" id="updTime">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="gauges" id="gauges"></div>
+
+  <div class="panel">
+    <div class="panel-title"><h2>TDS trend</h2><span>mg/L, last 20 readings</span></div>
+    <div class="chart-wrap"><svg class="chart" id="chart" viewBox="0 0 640 170" preserveAspectRatio="none"></svg></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title"><h2>Recent readings</h2><span id="cnt"></span></div>
+    <div class="chart-wrap"><table id="tbl"></table></div>
+  </div>
+
+  <div class="foot">
+    <span>Indicative sensor data — arsenic, lead, bacteria detect nahi hote</span>
+    <button onclick="load()">Refresh</button>
+  </div>
+</main>
+
+<script>
+const API_URL = "https://xjjrxl2lqk.execute-api.ap-south-1.amazonaws.com/readings";          // deploy ke baad yahan API Gateway URL paste karo
+const DEVICE = "neernetra-01";
+const LIMITS = { ph:[6.5,8.5], tds:[0,2000,500], turbidity:[0,5,1] };
+
+function demo(){
+  const P=[[7.4,220,.6],[7.8,650,1.5],[5.9,900,12],[6.9,40,.2]];
+  return Array.from({length:20},(_,i)=>{const [p,t,n]=P[Math.floor(i/5)%4];
+    const ph=p+Math.random()*.3-.15,tds=Math.max(0,t+Math.random()*30-15),ntu=Math.max(0,n+Math.random()*.4-.2);
+    const bad=ph<6.5||ph>8.5||ntu>5||tds>2000, warn=tds>500||ntu>1;
+    return {ts:Date.now()/1000-(20-i)*300,ph,tds,turbidity:ntu,temp:26+Math.random(),
+      status:bad?"UNSAFE":warn?"CAUTION":"SAFE",
+      advice:bad?"Is paani ko na piyen. Doosra source use karein.":warn?"Filter ya RO se guzaren, ubaal kar piyen.":"Paani theek lag raha hai, phir bhi lab test karwayein."};
+  }).reverse();
+}
+
+function gaugeSVG(label,value,unit,frac,color){
+  const r=26,c=2*Math.PI*r,off=c*(1-Math.min(Math.max(frac,0),1));
+  return `<svg width="64" height="64" viewBox="0 0 64 64">
+    <circle cx="32" cy="32" r="${r}" fill="none" stroke="var(--line)" stroke-width="6"/>
+    <circle cx="32" cy="32" r="${r}" fill="none" stroke="${color}" stroke-width="6" stroke-linecap="round"
+      stroke-dasharray="${c}" stroke-dashoffset="${off}" transform="rotate(-90 32 32)"/>
+  </svg>
+  <div><p class="gauge-label">${label}</p><p class="gauge-value num">${value}<span class="gauge-unit"> ${unit}</span></p></div>`;
+}
+
+async function load(){
+  try {
+    const response = await fetch(`${API_URL}?device=${DEVICE}&limit=50`);
+    if (!response.ok) throw new Error(`API HTTP ${response.status}`);
+
+    const raw = await response.text();
+    let data;
+
+    try {
+      data = JSON.parse(raw);
+    } catch (error) {
+      // Support API responses containing comma-separated JSON objects.
+      data = JSON.parse(`[${raw}]`);
+    }
+
+    let rows = Array.isArray(data) ? data
+      : Array.isArray(data?.items) ? data.items
+      : Array.isArray(data?.readings) ? data.readings
+      : [];
+
+    if (!rows.length) {
+      src.textContent = "AWS se abhi koi reading nahi mili";
+      st.textContent = "NO DATA";
+      adv.textContent = "AWS API se abhi koi reading available nahi hai.";
+      gauges.innerHTML = "";
+      chart.innerHTML = "";
+      cnt.textContent = "0 readings";
+      tbl.innerHTML = "";
+      return;
+    }
+
+    rows = rows.map(x => ({
+      ...x,
+      ts: Number(x.ts),
+      ph: Number(x.ph),
+      tds: Number(x.tds),
+      turbidity: Number(x.turbidity),
+      temp: Number(x.temp ?? x.temperature ?? 0),
+      status: x.status || "CAUTION",
+      advice: x.advice || "Yeh indicative reading hai; paani ki quality ke liye lab test karwayein."
+    })).filter(x =>
+      Number.isFinite(x.ts) &&
+      Number.isFinite(x.ph) &&
+      Number.isFinite(x.tds) &&
+      Number.isFinite(x.turbidity) &&
+      Number.isFinite(x.temp)
+    );
+
+    if (!rows.length) throw new Error("API response mein valid readings nahi hain");
+
+    rows.sort((a, b) => b.ts - a.ts);
+    src.textContent = "AWS se live data";
+    render(rows);
+  } catch (error) {
+    console.error("NeerNetra dashboard error:", error);
+    src.textContent = "AWS data load nahi hua — Console check karein";
+    st.textContent = "ERROR";
+    adv.textContent = "Data load nahi hua. Browser Console mein error check karein.";
+  }
+}
+
+function render(rows){
+  const r = rows[0];
+  hero.className = "hero s-"+r.status;
+  st.textContent = r.status;
+  adv.textContent = r.advice;
+  devId.textContent = r.device_id || DEVICE;
+  updTime.textContent = new Date(r.ts*1000).toLocaleTimeString('hi-IN');
+
+  gauges.innerHTML = [
+    gaugeSVG('pH', r.ph.toFixed(2), '', 1-Math.min(Math.abs(r.ph-7.5)/3.5,1), (r.ph<6.5||r.ph>8.5)?'var(--unsafe)':'var(--aqua)'),
+    gaugeSVG('TDS', r.tds.toFixed(0), 'mg/L', Math.min(r.tds/2000,1), r.tds>2000?'var(--unsafe)':r.tds>500?'var(--caution)':'var(--safe)'),
+    gaugeSVG('Turbidity', r.turbidity.toFixed(1), 'NTU', Math.min(r.turbidity/10,1), r.turbidity>5?'var(--unsafe)':r.turbidity>1?'var(--caution)':'var(--safe)'),
+    gaugeSVG('Temp', r.temp.toFixed(1), '°C', Math.min(r.temp/40,1), 'var(--aqua)')
+  ].map(g=>`<div class="gauge">${g}</div>`).join('');
+
+  const d = rows.slice().reverse().map(x=>x.tds);
+  const mx = Math.max(...d, 500), W=640, H=170, pad=14;
+  const pts = d.map((v,i)=>[ (i/(d.length-1||1))*(W-2*pad)+pad, H-pad-(v/mx)*(H-2*pad) ]);
+  const line = pts.map((p,i)=> (i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const area = line + ` L${pts[pts.length-1][0]},${H-pad} L${pts[0][0]},${H-pad} Z`;
+  const y500 = H-pad-(500/mx)*(H-2*pad);
+  chart.innerHTML = `
+    <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="var(--aqua)" stop-opacity=".35"/>
+      <stop offset="100%" stop-color="var(--aqua)" stop-opacity="0"/>
+    </linearGradient></defs>
+    <line x1="${pad}" x2="${W-pad}" y1="${y500}" y2="${y500}" stroke="var(--caution)" stroke-dasharray="3 4" opacity=".5"/>
+    <path d="${area}" fill="url(#g1)"/>
+    <path d="${line}" fill="none" stroke="var(--aqua)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+  cnt.textContent = rows.length + " readings";
+  tbl.innerHTML = "<tr><th>Time</th><th>Status</th><th>pH</th><th>TDS</th><th>NTU</th><th>Temp</th></tr>" +
+    rows.slice(0,12).map(x=>`<tr>
+      <td class="num">${new Date(x.ts*1000).toLocaleTimeString('hi-IN')}</td>
+      <td><span class="pill ${x.status}"><span class="dot"></span>${x.status}</span></td>
+      <td class="num">${x.ph.toFixed(2)}</td>
+      <td class="num">${x.tds.toFixed(0)}</td>
+      <td class="num">${x.turbidity.toFixed(1)}</td>
+      <td class="num">${x.temp.toFixed(1)}</td>
+    </tr>`).join('');
+}
+
+load();
+setInterval(load, 15000);
+</script>
+</body>
+</html>

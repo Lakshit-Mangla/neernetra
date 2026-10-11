@@ -1,0 +1,12 @@
+{
+  "name": "neernetra-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.629.0",
+    "@aws-sdk/lib-dynamodb": "^3.629.0",
+    "@aws-sdk/client-sns": "^3.629.0",
+    "@aws-sdk/client-iot-data-plane": "^3.629.0"
+  }
+}

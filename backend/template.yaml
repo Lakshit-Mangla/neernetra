@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: NeerNetra - water quality IoT backend
+Parameters:
+  AlertEmail: {Type: String, Description: Email for unsafe-water alerts}
+Resources:
+  Readings:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - {AttributeName: device_id, AttributeType: S}
+        - {AttributeName: ts, AttributeType: N}
+      KeySchema:
+        - {AttributeName: device_id, KeyType: HASH}
+        - {AttributeName: ts, KeyType: RANGE}
+  Alerts:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription: [{Protocol: email, Endpoint: !Ref AlertEmail}]
+  IngestFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs22.x
+      Handler: ingest_lambda.handler
+      CodeUri: .
+      Environment: {Variables: {TABLE: !Ref Readings, ALERT_TOPIC: !Ref Alerts}}
+      Policies:
+        - DynamoDBCrudPolicy: {TableName: !Ref Readings}
+        - SNSPublishMessagePolicy: {TopicName: !GetAtt Alerts.TopicName}
+  IotRule:
+    Type: AWS::IoT::TopicRule
+    Properties:
+      TopicRulePayload:
+        Sql: "SELECT * FROM 'neernetra/+/data'"
+        Actions: [{Lambda: {FunctionArn: !GetAtt IngestFn.Arn}}]
+  IotInvoke:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref IngestFn
+      Principal: iot.amazonaws.com
+      SourceArn: !GetAtt IotRule.Arn
+  ApiFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs22.x
+      Handler: api_lambda.handler
+      CodeUri: .
+      Environment: {Variables: {TABLE: !Ref Readings}}
+      Policies: [DynamoDBReadPolicy: {TableName: !Ref Readings}]
+      Events:
+        Get: {Type: HttpApi, Properties: {Path: /readings, Method: GET}}
+Outputs:
+  ApiUrl:
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/readings"
